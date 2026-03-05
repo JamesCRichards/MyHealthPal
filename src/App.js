@@ -151,9 +151,9 @@ function App() {
     <div className="App">
       <Paper style={{ padding: '16px', minHeight: '100vh' }}>
         <AppBar position="static">
-          <Typography variant="h6" component="span">My Health Pal</Typography>
+          <Typography variant="h4" component="span">My Health Pal</Typography>
         </AppBar>
-        <Typography variant="h4" gutterBottom style={{ marginTop: 16 }}>
+        <Typography variant="h6" gutterBottom style={{ marginTop: 16 }}>
           Welcome to My Health Pal
         </Typography>
         <Typography variant="body1" color="text.secondary" paragraph>

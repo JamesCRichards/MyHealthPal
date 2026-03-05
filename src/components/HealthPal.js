@@ -4,7 +4,7 @@ import { getNextInteractiveReminder } from '../data/reminders';
 import { sendMessage, getCarePoints, updateCarePoints, classifyReminderResponse } from '../services/healthPalApi';
 import './HealthPal.css';
 
-const REMINDER_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes - show next reminder / treat current as ignored
+const REMINDER_INTERVAL_MS = 5 * 60 * 1000; // 2 minutes - show next reminder / treat current as ignored
 const IGNORED_POINTS = -5;
 
 export default function HealthPal({

@@ -78,7 +78,7 @@ function PalBox({
         )}
         <div className="pal-box-points" aria-live="polite">
           <span className="pal-box-points-value">{carePoints}</span>
-          <span className="pal-box-points-label">points</span>
+          <span className="pal-box-points-label">Care Points</span>
         </div>
       </div>
 
