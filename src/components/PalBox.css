@@ -17,6 +17,53 @@
   min-height: 200px;
 }
 
+.pal-box-top-right {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 2;
+}
+
+.pal-box-store-btn {
+  flex-shrink: 0;
+}
+
+.pal-box-points {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  font-weight: 600;
+  color: #1565c0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pal-box-points-value {
+  font-size: 1.1rem;
+}
+
+.pal-box-points-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #666;
+}
+
+.pal-box-talk-btn-wrap {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  z-index: 2;
+}
+
+.pal-box-talk-btn {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
 .pal-vitals-record {
   position: absolute;
   top: 16px;

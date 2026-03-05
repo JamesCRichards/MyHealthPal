@@ -7,8 +7,18 @@ import './HealthPal.css';
 const REMINDER_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes - show next reminder / treat current as ignored
 const IGNORED_POINTS = -5;
 
-export default function HealthPal({ carePoints: carePointsProp, onCarePointsChange, onPalMessage }) {
-  const [open, setOpen] = useState(false);
+export default function HealthPal({
+  carePoints: carePointsProp,
+  onCarePointsChange,
+  onPalMessage,
+  open: controlledOpen,
+  onOpenChange,
+  hidePoints = false,
+  hideToggleButton = false,
+}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = onOpenChange != null ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange != null ? onOpenChange : setInternalOpen;
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -117,13 +127,16 @@ export default function HealthPal({ carePoints: carePointsProp, onCarePointsChan
     }
   };
 
+  const isEmbedded = hidePoints && hideToggleButton;
+
   return (
-    <div className="health-pal">
-      {/* Care points display */}
-      <div className="health-pal-care-points" aria-live="polite">
-        <span className="care-points-label">Care points</span>
-        <span className="care-points-value">{points}</span>
-      </div>
+    <div className={`health-pal ${isEmbedded ? 'health-pal--embedded' : ''}`}>
+      {!hidePoints && (
+        <div className="health-pal-care-points" aria-live="polite">
+          <span className="care-points-label">Care points</span>
+          <span className="care-points-value">{points}</span>
+        </div>
+      )}
 
       {/* Auto-appearing interactive reminder popup */}
       {activeReminder && (
@@ -150,14 +163,16 @@ export default function HealthPal({ carePoints: carePointsProp, onCarePointsChan
         </div>
       )}
 
-      <button
-        type="button"
-        className="health-pal-toggle"
-        onClick={() => setOpen(!open)}
-        aria-label="Open Health Pal"
-      >
-        {open ? 'Close Health Pal' : 'Talk to Health Pal'}
-      </button>
+      {!hideToggleButton && (
+        <button
+          type="button"
+          className="health-pal-toggle"
+          onClick={() => setOpen(!open)}
+          aria-label="Open Health Pal"
+        >
+          {open ? 'Close Health Pal' : 'Talk to Health Pal'}
+        </button>
+      )}
 
       {open && (
         <div className="health-pal-panel">

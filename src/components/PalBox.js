@@ -1,6 +1,7 @@
-import React from 'react';
-import { Paper, Typography } from '@mui/material';
+import React, { useState } from 'react';
+import { Paper, Typography, Button } from '@mui/material';
 import { SHIRTS, BACKGROUNDS, HATS } from '../data/cosmetics';
+import HealthPal from './HealthPal';
 import './PalBox.css';
 
 function getShirt(id) {
@@ -31,7 +32,19 @@ function formatVitalReading(type, data) {
   }
 }
 
-function PalBox({ message, equippedShirtId = 'default', equippedBackgroundId = 'default', equippedHatId = 'none', vitalReadings = {}, onPalClick }) {
+function PalBox({
+  message,
+  equippedShirtId = 'default',
+  equippedBackgroundId = 'default',
+  equippedHatId = 'none',
+  vitalReadings = {},
+  onPalClick,
+  carePoints = 0,
+  onCarePointsChange,
+  onPalMessage,
+  onOpenStore,
+}) {
+  const [healthPalOpen, setHealthPalOpen] = useState(false);
   const shirt = getShirt(equippedShirtId);
   const bg = getBackground(equippedBackgroundId);
   const hat = getHat(equippedHatId);
@@ -51,6 +64,24 @@ function PalBox({ message, equippedShirtId = 'default', equippedBackgroundId = '
         background: `linear-gradient(180deg, ${bg.color} 0%, ${bg.accent} 100%)`,
       }}
     >
+      <div className="pal-box-top-right">
+        {onOpenStore && (
+          <Button
+            className="pal-box-store-btn"
+            variant="outlined"
+            size="small"
+            onClick={onOpenStore}
+            aria-label="Open Pal Store"
+          >
+            Pal Store
+          </Button>
+        )}
+        <div className="pal-box-points" aria-live="polite">
+          <span className="pal-box-points-value">{carePoints}</span>
+          <span className="pal-box-points-label">points</span>
+        </div>
+      </div>
+
       {message && (
         <div className="pal-speech-bubble">
           <Typography variant="body1" className="pal-speech-text">
@@ -114,6 +145,29 @@ function PalBox({ message, equippedShirtId = 'default', equippedBackgroundId = '
         </div>
       </div>
       </div>
+
+      <div className="pal-box-talk-btn-wrap">
+        <Button
+          className="pal-box-talk-btn"
+          variant="contained"
+          color="primary"
+          size="small"
+onClick={() => setHealthPalOpen((prev) => !prev)}
+        aria-label={healthPalOpen ? 'Close Health Pal' : 'Talk to Health Pal'}
+      >
+        {healthPalOpen ? 'Close Health Pal' : 'Talk to Health Pal'}
+        </Button>
+      </div>
+
+      <HealthPal
+        carePoints={carePoints}
+        onCarePointsChange={onCarePointsChange}
+        onPalMessage={onPalMessage}
+        open={healthPalOpen}
+        onOpenChange={setHealthPalOpen}
+        hidePoints
+        hideToggleButton
+      />
     </Paper>
   );
 }

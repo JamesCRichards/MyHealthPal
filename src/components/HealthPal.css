@@ -5,6 +5,20 @@
   padding: 1rem;
 }
 
+.health-pal--embedded {
+  margin: 0;
+  padding: 0;
+  max-width: none;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.health-pal--embedded .health-pal-active-reminder,
+.health-pal--embedded .health-pal-panel {
+  pointer-events: auto;
+}
+
 .health-pal-care-points {
   display: inline-flex;
   align-items: center;

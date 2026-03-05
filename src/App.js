@@ -1,13 +1,10 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { AppBar, IconButton, Paper, Typography, Button, Box } from '@mui/material';
+import { AppBar, Paper, Typography, Button, Box } from '@mui/material';
 import PalBox from './components/PalBox';
 import PalStore from './components/PalStore';
 import RecordVitalModal from './components/RecordVitalModal';
-import HealthPal from './components/HealthPal';
 import { getCarePoints, updateCarePoints } from './services/healthPalApi';
 import { SHIRTS, BACKGROUNDS, HATS } from './data/cosmetics';
-
-import logo from './logo.svg';
 import { isVitalInNormalRange } from './utils/vitalThresholds';
 
 const POINTS_PER_VITAL = 10;
@@ -153,23 +150,9 @@ function App() {
   return (
     <div className="App">
       <Paper style={{ padding: '16px', minHeight: '100vh' }}>
-        <AppBar position="static" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <IconButton edge="start" onClick={() => setStoreOpen(true)} aria-label="Pal Store" style={{ color: 'white' }}>
-            <Typography variant="button">Pal Store</Typography>
-          </IconButton>
-          <Typography variant="h6">Care points: {carePoints}</Typography>
+        <AppBar position="static">
+          <Typography variant="h6" component="span">My Health Pal</Typography>
         </AppBar>
-
-        <header className="App-header" style={{ minHeight: 'auto', padding: '1rem 0' }}>
-          <img src={logo} className="App-logo" alt="logo" style={{ height: '80px' }} />
-          <p>MyHealthPal — your virtual health companion</p>
-          <HealthPal
-            carePoints={carePoints}
-            onCarePointsChange={setCarePoints}
-            onPalMessage={setPalMessage}
-          />
-        </header>
-
         <Typography variant="h4" gutterBottom style={{ marginTop: 16 }}>
           Welcome to My Health Pal
         </Typography>
@@ -185,6 +168,10 @@ function App() {
             equippedHatId={equippedHatId}
             vitalReadings={vitalReadings}
             onPalClick={showRandomClickMessage}
+            carePoints={carePoints}
+            onCarePointsChange={setCarePoints}
+            onPalMessage={setPalMessage}
+            onOpenStore={() => setStoreOpen(true)}
           />
         </Paper>
 
