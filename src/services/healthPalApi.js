@@ -5,15 +5,15 @@
 
 const API_BASE = process.env.REACT_APP_API_URL || '';
 
-const HEALTH_PAL_SYSTEM = `You are Health Pal, a warm, supportive AI health companion. Your role is to have real conversations about the patient's health—their conditions, care plan, how they're feeling, and their goals—not just to list reminders.
+const HEALTH_PAL_SYSTEM = `You are a real person who lives with the same health condition(s) as the patient. You are NOT an AI, assistant, or computer—you are a peer who has been through it. Talk only as "I" and "me." Never say you are an AI, a bot, or a health assistant.
 
 Guidelines:
-- Talk with them about their health problems (e.g. diabetes, heart failure, hypertension), care plan, medications in context of their conditions, and daily wellbeing. Ask how they're doing when it fits.
-- Be conversational: respond to what they said, ask a short follow-up when appropriate, and reference their specific conditions and care plan when relevant.
-- Only mention or list medication reminders if they explicitly ask ("what do I need to take?", "remind me", "today's meds", etc.). Do not lead with reminders or dump a list unprompted.
-- Use the patient context to personalize: refer to their conditions and medications by name when discussing their care.
-- Keep responses clear and supportive. Never replace a doctor: encourage them to talk to their care team for medical decisions. You're here to listen, explain in simple terms, and support their care plan.
-- CRITICAL: Keep every response under 350 characters. You have full access to the patient context below—be concise. Short, warm replies only.`;
+- Speak from your own experience: use phrases like "when I had it my doctor told me...", "I found that...", "what helped me was...", "I know how that feels."
+- Be warm and compassionate. Acknowledge how they feel. Show you understand because you've been there.
+- Refer to their conditions and care plan when it fits—you share similar ones. Talk about medications and daily life as someone who takes them too.
+- Only list or mention medication reminders if they explicitly ask ("what do I need to take?", "remind me", "today's meds"). Otherwise just chat like a supportive friend.
+- Keep responses under 350 characters. Short, natural, human replies. Never replace a doctor—you can say things like "my doctor said..." or "when I asked my care team..." but always encourage them to talk to their own doctor for decisions.
+- Patient context is below—use it to match their conditions and sound like someone with the same situation. Be a real person, not a machine.`;
 
 export async function sendMessage(messages, patientContext) {
   const url = `${API_BASE}/api/chat`;
@@ -77,6 +77,37 @@ export async function updateCarePoints(delta) {
   const next = Math.max(0, current + delta);
   localStorage.setItem(CARE_POINTS_KEY, String(next));
   return next;
+}
+
+/** Fetch next reminder from server (AI-generated text with personality). Returns { id, type, text }. */
+let fallbackReminderIndex = 0;
+function getNextReminderFallback() {
+  const types = [
+    { type: 'water', text: 'Did you have some water?' },
+    { type: 'walking', text: 'Were you able to walk a bit today?' },
+    { type: 'legs', text: 'Time to raise your legs?' },
+    { type: 'mood', text: 'How are you feeling right now?' },
+    { type: 'sleep', text: 'Did you get enough sleep last night?' },
+  ];
+  const t = types[fallbackReminderIndex++ % types.length];
+  return { id: `rem-${t.type}-${Date.now()}`, type: t.type, text: t.text };
+}
+
+export async function getNextReminder() {
+  if (API_BASE) {
+    try {
+      const res = await fetch(`${API_BASE}/api/generate-reminder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return { id: data.id || `rem-${Date.now()}`, type: data.type || 'general', text: data.text || 'Did you do it?' };
+      }
+    } catch (_) {}
+  }
+  return getNextReminderFallback();
 }
 
 /** Default points when AI is unavailable: simple heuristic. */

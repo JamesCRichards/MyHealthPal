@@ -4,7 +4,7 @@ require('dotenv').config({ path: envPath });
 
 const express = require('express');
 const cors = require('cors');
-const { getPatientContextSummary, getTodaysReminders } = require('./patientData');
+const { getPatientContextSummary, getTodaysReminders, PATIENT_PROFILE } = require('./patientData');
 
 const app = express();
 app.use(cors());
@@ -156,81 +156,156 @@ function fallbackReply(messages, patientContext) {
     (lower.includes('medication') && (lower.includes('list') || lower.includes('what ') || lower.includes('when ')));
   if (askingForReminderList) {
     if (reminderLines) {
-      return `Here are your upcoming reminders:\n\n${reminderLines}\n\nYou can mark them done in the app. Want to talk about how you're managing your conditions or your care plan?`;
+      return `Here’s what’s coming up for today:\n\n${reminderLines}\n\nI set mine on my phone too—helps me stay on track. How are you feeling with your condition lately?`;
     }
-    return "You're all set with today's reminders. How are you feeling about your health lately? I'm here to chat about your conditions or care plan whenever you'd like.";
+    return "You're all set for today. I know some days are harder than others—how are you doing with everything?";
   }
 
   if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
-    return "Hi! I'm Health Pal, your health companion. I'm here to talk about your health—your conditions, your care plan, how you're doing—not just reminders. What's on your mind today?";
+    return "Hey! I’ve been through the same kind of stuff with my health, so I get it. What’s on your mind today?";
   }
 
   if (lower.includes('how are you') || lower.includes('how do you feel')) {
-    return "I'm here to support you. How are you feeling today—physically and about your care? If you're managing diabetes, heart failure, or blood pressure, we can talk through any of that. What would help most right now?";
+    return "I’m okay—some days are better than others, same as anyone with our condition. How are you really doing? I’m here to listen.";
   }
 
   if (lower.includes('diabetes') || lower.includes('blood sugar')) {
-    return "Managing diabetes is a big part of your care plan. Things like diet, activity, and taking Metformin as prescribed all help. How has your blood sugar been lately? Have you had any questions for your doctor about your diabetes care?";
+    return "When I was first dealing with it, my doctor told me diet and staying active make a big difference. How’s your blood sugar been? It’s tough sometimes, I know.";
   }
 
   if (lower.includes('heart') || lower.includes('chf') || lower.includes('failure')) {
-    return "Heart failure care often focuses on medications like Lisinopril, Furosemide, and Carvedilol, plus watching for swelling or shortness of breath. How's your energy and breathing? Anything you've been meaning to bring up with your care team?";
+    return "I’ve had to learn to watch my fluid and take my meds every day—it’s not easy. How’s your energy and breathing? If something feels off, your care team should know.";
   }
 
   if (lower.includes('blood pressure') || lower.includes('hypertension')) {
-    return "Hypertension is something we can keep talking about. Taking your blood pressure medication (e.g. Lisinopril) consistently helps. How have your readings been? Want to talk about lifestyle or other parts of your care plan?";
+    return "My doctor told me consistency with the medication really helps. How have your readings been? I know it can feel like a lot to track.";
   }
 
   if (lower.includes('care plan') || lower.includes('careplan')) {
-    return "Your care plan includes your conditions—Type 2 Diabetes, Congestive Heart Failure, and Hypertension—and the medications and habits that support them. We can go through any part of it: how you're doing on meds, symptoms, or goals. What would you like to focus on?";
+    return "We’re in a similar boat—conditions, meds, all of it. What part do you want to talk about? How you’re feeling, or something specific?";
   }
 
   if (lower.includes('medication') || lower.includes('meds') || lower.includes('pill') || lower.includes('take ')) {
     if (!lower.includes('list') && !lower.includes('what ') && !lower.includes('when ') && !lower.includes('remind')) {
-      return "We can definitely talk about your medications and how they fit into your care. You're on Metformin, Lisinopril, Furosemide, Carvedilol, and Aspirin for your conditions. Any side effects or questions about timing? Or say 'remind me' if you want today's reminder list.";
+      return "I take similar stuff—it can be a lot. Any side effects or questions about when you take yours? Or say 'remind me' if you want today’s list.";
     }
   }
 
   // Symptoms and how you're feeling
   if (lower.includes('tired') || lower.includes('fatigue') || lower.includes('exhausted') || lower.includes('weak')) {
-    return "Feeling tired can be related to several things—your conditions, medications, sleep, or activity. With heart failure and diabetes, it's worth tracking how often it happens and whether rest helps. Have you mentioned this to your care team? I'm here to listen; for a full workup, your doctor can help narrow it down.";
+    return "I get that. When I feel like that I try to note when it happens—sometimes it’s my meds or just a rough patch. Worth mentioning to your doctor so they can help figure it out. You’re not alone in this.";
   }
   if (lower.includes('swelling') || lower.includes('swollen') || lower.includes('edema') || lower.includes('ankle')) {
-    return "Swelling, especially in the legs or ankles, can be a sign to watch with heart failure. Keeping up with your Furosemide and limiting salt often helps. If it's new or getting worse, your care team should know. How long have you noticed it?";
+    return "I’ve had that too—my doctor said to watch salt and keep up with my water pill. If it’s new or worse, definitely tell your care team. How long have you noticed it?";
   }
   if (lower.includes('shortness of breath') || lower.includes('breath') || lower.includes('breathing') || lower.includes('winded')) {
-    return "Shortness of breath is something to keep an eye on with heart failure. Taking your medications as prescribed and watching fluid and salt can help. If it's new, worse, or happens at rest, tell your doctor or nurse. How have you been feeling otherwise?";
+    return "I know how scary that can feel. Taking my meds and watching fluid has helped me. If it’s new or you’re getting winded at rest, please tell your doctor. How have you been otherwise?";
   }
   if (lower.includes('dizzy') || lower.includes('dizziness') || lower.includes('lightheaded')) {
-    return "Dizziness can be related to blood pressure, blood sugar, or medications like some of yours. Try to note when it happens—after standing, after meals, or after your meds. Your care team can help figure out if we need to adjust anything. Are you keeping up with your blood pressure readings?";
+    return "I’ve had that—sometimes blood pressure or blood sugar. My doctor said to note when it happens. Are you checking your readings? Worth bringing up at your next visit.";
   }
   if (lower.includes('side effect') || lower.includes('side effects') || lower.includes('nauseous') || lower.includes('upset stomach')) {
-    return "Side effects are worth discussing. Metformin can sometimes bother the stomach; taking it with food can help. Lisinopril, Furosemide, and others can affect blood pressure or electrolytes. I'd suggest writing down what you're feeling and when, and sharing that with your doctor so they can adjust if needed. Anything in particular bothering you?";
+    return "I had stomach issues with one of my meds too—taking it with food helped. Definitely tell your doctor what you’re feeling and when; they can adjust. What’s bothering you most?";
   }
   if (lower.includes('food') && (lower.includes('metformin') || lower.includes('med') || lower.includes('take'))) {
-    return "Taking Metformin with food can help reduce stomach upset. Your care team or pharmacist can give you the best timing for your dose. Do you have other questions about when to take your medications?";
+    return "With that one I take it with food—made a difference for me. Your pharmacist or doctor can say what’s best for your dose. Anything else about when you take your meds?";
   }
   if (lower.includes('when ') && (lower.includes('take') || lower.includes('med') || lower.includes('pill'))) {
-    return "Timing of medications matters—some are best with food, some at the same time each day. Your prescription and care team have the exact schedule. If you want a quick list of what's coming up today, just ask for 'today's reminders.' Want to talk about how you're doing with taking them regularly?";
+    return "I try to take mine at the same time every day—my doctor said it helps. For your exact schedule, your care team knows best. Want today’s reminder list? Just ask.";
   }
 
   // General "how I feel" or open-ended health questions
   if (lower.includes('feel') || lower.includes('feeling') || lower.includes('symptom') || lower.includes('pain') || lower.includes('hurt')) {
-    return "Thanks for sharing. I'm here to listen. It can help to keep a quick note of what you feel and when, so you can share it with your care team. Would you like to talk about your medications, your conditions, or something specific that's bothering you?";
+    return "I’m sorry you’re going through that. Writing down what you feel and when really helped me explain it to my doctor. Want to talk about your meds or something specific?";
   }
   if (lower.includes('doctor') || lower.includes('appointment') || lower.includes('care team')) {
-    return "Your doctor and care team are the right people for diagnoses and treatment changes. I'm here to support you day to day—reminders, talking through your care plan, and how you're feeling. Is there something you want to prepare for your next visit or talk through now?";
+    return "Your doctor’s the one to make changes—I just share what I’ve been through. Is there something you want to prepare for your next visit? I’m here to listen.";
   }
   if (lower.includes('why ') || lower.includes('what ') || lower.includes('can i ') || lower.includes('should i ') || lower.includes('?')) {
-    return "I want to help with that. In this mode I can chat about your conditions (diabetes, heart failure, blood pressure), your medications, and your care plan. Can you tell me a bit more—for example, are you asking about how you're feeling, side effects, or when to take your meds? If you want today's reminder list, just ask.";
+    return "I get it—I had a lot of questions too. Tell me a bit more? Like how you’re feeling, side effects, or when to take things? I’ll share what helped me.";
   }
 
   // Default: acknowledge and invite—vary the wording so it doesn't feel like a broken loop
-  return "I'm not sure I caught that. I'm here to talk about your health and care plan—your conditions, how you're feeling, or your medications. What would you like to talk about? If you want today's reminder list, just ask.";
+  return "I’m not sure I got that. I’m here as someone who gets it—we can talk about how you’re feeling, your meds, or your condition. What do you want to talk about?";
 }
 
 /** Points for ignoring a reminder (no response within 2 minutes). */
 const IGNORED_REMINDER_POINTS = -5;
+
+/** Reminder types for round-robin (from patient profile schedules). */
+const REMINDER_TYPES = ['water', 'walking', 'legs', 'mood', 'sleep'];
+let nextReminderTypeIndex = 0;
+
+/**
+ * Generate reminder text with personality: as a patient with same condition.
+ * Tone varies: sometimes a bit rude, joke, friendly, pushy, or personal experience.
+ */
+async function generateReminderText(reminderType, extraContext = {}) {
+  const { conditions, medications, recommendations } = PATIENT_PROFILE;
+  const contextBlob = `Patient conditions: ${(conditions || []).join(', ')}. Medications: ${(medications || []).map((m) => m.name).join(', ')}. Key recommendations: ${(recommendations || []).slice(0, 4).join(' ')}.`;
+  const medBlob = extraContext.medication ? ` This reminder is about: ${extraContext.medication.name} ${extraContext.medication.dose} (${extraContext.medication.when}).` : '';
+
+  const systemPrompt = `You are a patient who has the SAME health conditions as the person you're reminding. You're not a doctor or assistant—you're a peer. Write ONE short reminder sentence (under 120 characters) for the given task.
+
+Task type: ${reminderType}.${medBlob}
+${contextBlob}
+
+Vary your personality each time. Pick ONE of these styles:
+- A bit rude or blunt: "Look, did you take it or not?"
+- With a joke: "Your heart and I both need you to take this. Don't make us beg."
+- Friendly: "Hey, just checking—did you get to it? No judgment!"
+- Pushy: "You know what happens when I skip mine—don't skip yours."
+- Personal experience: "When I miss that one, my heart goes crazy. Did you take yours?"
+- Supportive: "Same boat here—did you take it? Helps me to stay on track."
+
+Output ONLY the reminder sentence, no quotes, no label. One line.`;
+
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: `Generate a ${reminderType} reminder right now.` },
+  ];
+  const reply = await callChatAPI(messages, 60);
+  if (reply && reply.trim()) {
+    return reply.trim().slice(0, 200);
+  }
+  // Fallback text per type (no personality, but clear)
+  const fallbacks = {
+    water: 'Did you have some water? I forget too sometimes.',
+    walking: 'Were you able to get outside for a bit?',
+    legs: 'Time to put your feet up for a few minutes?',
+    mood: 'How are you feeling right now?',
+    sleep: 'Did you get enough sleep last night?',
+    medication: extraContext.medication
+      ? `Did you take ${extraContext.medication.name}?`
+      : 'Did you take your medication?',
+  };
+  return fallbacks[reminderType] || 'Quick check—did you do the thing?';
+}
+
+/**
+ * Get next reminder type (round-robin), then generate personality text via AI.
+ */
+function getNextReminderType() {
+  const type = REMINDER_TYPES[nextReminderTypeIndex % REMINDER_TYPES.length];
+  nextReminderTypeIndex += 1;
+  return type;
+}
+
+/** POST /api/generate-reminder: returns { id, type, text } with AI-generated personality text. */
+app.post('/api/generate-reminder', async (req, res) => {
+  try {
+    const type = getNextReminderType();
+    const text = await generateReminderText(type, req.body || {}).catch(() => {
+      const fallbacks = { water: 'Did you have some water?', walking: 'Were you able to walk a bit?', legs: 'Time to raise your legs?', mood: 'How are you feeling?', sleep: 'Did you get enough sleep?' };
+      return fallbacks[type] || 'Quick check—did you do it?';
+    });
+    const id = `rem-${type}-${Date.now()}`;
+    res.json({ id, type, text });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: e.message || 'Server error', id: `rem-general-${Date.now()}`, type: 'general', text: 'Did you do it? Reply in your own words.' });
+  }
+});
 
 /** Points for asking a question in chat (any message). */
 const CHAT_MESSAGE_POINTS = 3;
@@ -280,7 +355,7 @@ Reminder text: "${reminderText}"
 Patient reply: "${(userReply || '').trim()}"
 
 Respond with ONLY a JSON object, no other text: { "positive": true or false, "points": number }
-- positive true = they did the thing or they not yet, butcommitted to it. Use points between 2 and 5. Feeling bad but staying adherent and replying is positive.
+- positive true = they did the thing or they haven't yet but committed to it. Use points between 2 and 5. Feeling bad but staying adherent and replying is positive.
 - positive false = they did not, refused, or are ignoring. Use points between -5 and -1.
 Example: {"positive":true,"points":5}
 Example: {"positive":false,"points":-5}`;

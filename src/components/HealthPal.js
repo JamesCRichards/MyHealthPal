@@ -1,10 +1,9 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { getPatientContextSummary } from '../data/patientProfile';
-import { getNextInteractiveReminder } from '../data/reminders';
-import { sendMessage, getCarePoints, updateCarePoints, classifyReminderResponse, getDoctorReport } from '../services/healthPalApi';
+import { sendMessage, getCarePoints, updateCarePoints, classifyReminderResponse, getDoctorReport, getNextReminder } from '../services/healthPalApi';
 import './HealthPal.css';
 
-const REMINDER_INTERVAL_MS = 5 * 60 * 1000; // 2 minutes - show next reminder / treat current as ignored
+const REMINDER_INTERVAL_MS = 30 * 1000; // 30 seconds - show next reminder / treat current as ignored
 const IGNORED_POINTS = -5;
 
 const CHAT_HISTORY_KEY = 'healthpal_chat_history';
@@ -75,6 +74,8 @@ export default function HealthPal({
   const patientContext = getPatientContextSummary();
   const reminderTimerRef = useRef(null);
   const activeReminderRef = useRef(null);
+  const onCarePointsChangeRef = useRef(onCarePointsChange);
+  onCarePointsChangeRef.current = onCarePointsChange;
 
   const points = typeof carePointsProp === 'number' ? carePointsProp : carePoints;
 
@@ -98,32 +99,34 @@ export default function HealthPal({
     saveChatHistory(messages);
   }, [messages]);
 
-  // Auto-show a new interactive reminder every 2 minutes. If one is already open, treat as ignored (negative points) then show next.
+  // Auto-show a new interactive reminder every 30 seconds. If one is already open, treat as ignored (negative points) then show next.
   useEffect(() => {
     function showNextReminder() {
       if (activeReminderRef.current) {
         updateCarePoints(IGNORED_POINTS).then((newPoints) => {
           setCarePointsState(newPoints);
-          if (onCarePointsChange) onCarePointsChange(newPoints);
+          const cb = onCarePointsChangeRef.current;
+          if (cb) cb(newPoints);
         });
         setActiveReminder(null);
         activeReminderRef.current = null;
       }
-      const next = getNextInteractiveReminder();
-      if (next) {
-        setActiveReminder(next);
-        activeReminderRef.current = next;
-        setReminderReplyText('');
-      }
+      getNextReminder().then((next) => {
+        if (next) {
+          setActiveReminder(next);
+          activeReminderRef.current = next;
+          setReminderReplyText('');
+        }
+      });
     }
 
-    const initialTimer = setTimeout(showNextReminder, 5000);
+    const initialTimer = setTimeout(showNextReminder, 2000);
     reminderTimerRef.current = setInterval(showNextReminder, REMINDER_INTERVAL_MS);
     return () => {
       clearTimeout(initialTimer);
       if (reminderTimerRef.current) clearInterval(reminderTimerRef.current);
     };
-  }, [onCarePointsChange]);
+  }, []);
 
   const handleReminderReply = useCallback(
     async (text) => {
@@ -217,7 +220,7 @@ export default function HealthPal({
             Reminder
           </h3>
           <p className="active-reminder-text">{activeReminder.text}</p>
-          <p className="active-reminder-hint">Reply in your own words. No response within 2 minutes counts as missed.</p>
+          <p className="active-reminder-hint">Reply in your own words. No response within 30 seconds counts as missed.</p>
           <form className="active-reminder-form" onSubmit={handleReminderSubmit}>
             <input
               type="text"
