@@ -15,10 +15,33 @@ function getHat(id) {
   return HATS.find((h) => h.id === id) || HATS[0];
 }
 
-function PalBox({ message, equippedShirtId = 'default', equippedBackgroundId = 'default', equippedHatId = 'none', onPalClick }) {
+function formatVitalReading(type, data) {
+  if (!data) return '—';
+  switch (type) {
+    case 'bloodPressure':
+      return `${data.systolic}/${data.diastolic} mmHg`;
+    case 'bloodOxygen':
+      return `${data.spo2}%`;
+    case 'weight':
+      return `${data.value} ${data.unit}`;
+    case 'heartRate':
+      return `${data.bpm} bpm`;
+    default:
+      return '—';
+  }
+}
+
+function PalBox({ message, equippedShirtId = 'default', equippedBackgroundId = 'default', equippedHatId = 'none', vitalReadings = {}, onPalClick }) {
   const shirt = getShirt(equippedShirtId);
   const bg = getBackground(equippedBackgroundId);
   const hat = getHat(equippedHatId);
+
+  const vitals = [
+    { label: 'Blood pressure', key: 'bloodPressure' },
+    { label: 'Blood oxygen', key: 'bloodOxygen' },
+    { label: 'Weight', key: 'weight' },
+    { label: 'Heart rate', key: 'heartRate' },
+  ];
 
   return (
     <Paper
@@ -35,6 +58,18 @@ function PalBox({ message, equippedShirtId = 'default', equippedBackgroundId = '
           </Typography>
         </div>
       )}
+      <div className="pal-vitals-record">
+        <Typography variant="subtitle2" className="pal-vitals-title">Your vitals</Typography>
+        <ul className="pal-vitals-list">
+          {vitals.map(({ label, key }) => (
+            <li key={key}>
+              <span className="pal-vitals-label">{label}:</span>{' '}
+              <span className="pal-vitals-value">{formatVitalReading(key, vitalReadings[key])}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="pal-box-content">
       <div
         className="pal-character"
         role="button"
@@ -77,6 +112,7 @@ function PalBox({ message, equippedShirtId = 'default', equippedBackgroundId = '
             </div>
           )}
         </div>
+      </div>
       </div>
     </Paper>
   );

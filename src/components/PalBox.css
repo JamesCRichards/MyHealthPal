@@ -4,10 +4,56 @@
   border-radius: 16px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
+  align-items: stretch;
   padding: 24px;
   overflow: hidden;
+}
+
+.pal-box-content {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex: 1;
+  min-height: 200px;
+}
+
+.pal-vitals-record {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 10px 14px;
+  min-width: 160px;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pal-vitals-title {
+  display: block;
+  margin-bottom: 8px !important;
+  font-weight: 600;
+  color: #333;
+}
+
+.pal-vitals-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pal-vitals-list li {
+  padding: 2px 0;
+  font-size: 0.875rem;
+  color: #555;
+}
+
+.pal-vitals-label {
+  color: #666;
+}
+
+.pal-vitals-value {
+  font-weight: 500;
+  color: #333;
 }
 
 .pal-speech-bubble {
@@ -55,6 +101,7 @@
   flex-direction: column;
   align-items: center;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .pal-hat {

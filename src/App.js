@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import { AppBar, IconButton, Paper, Typography, Button } from '@mui/material';
+import { AppBar, IconButton, Paper, Typography, Button, Box } from '@mui/material';
 import PalBox from './components/PalBox';
 import PalStore from './components/PalStore';
+import RecordVitalModal from './components/RecordVitalModal';
 import { SHIRTS, BACKGROUNDS, HATS } from './data/cosmetics';
 
 const POINTS_PER_VITAL = 10;
@@ -31,6 +32,24 @@ function App() {
   const [ownedBackgroundIds, setOwnedBackgroundIds] = useState(['default']);
   const [ownedHatIds, setOwnedHatIds] = useState(['none']);
   const [equippedHatId, setEquippedHatId] = useState('none');
+  const [vitalModalOpen, setVitalModalOpen] = useState(false);
+  const [vitalModalType, setVitalModalType] = useState(null);
+  const [vitalReadings, setVitalReadings] = useState({
+    bloodPressure: null,
+    bloodOxygen: null,
+    weight: null,
+    heartRate: null,
+  });
+
+  const openVitalModal = useCallback((type) => {
+    setVitalModalType(type);
+    setVitalModalOpen(true);
+  }, []);
+
+  const closeVitalModal = useCallback(() => {
+    setVitalModalOpen(false);
+    setVitalModalType(null);
+  }, []);
 
   const showRandomMessage = useCallback(() => {
     const message = HAPPY_MESSAGES[Math.floor(Math.random() * HAPPY_MESSAGES.length)];
@@ -44,10 +63,12 @@ function App() {
     setTimeout(() => setPalMessage(null), 5000);
   }, []);
 
-  const takeVitals = useCallback(() => {
+  const handleVitalRecorded = useCallback((readings, type) => {
+    setVitalReadings((prev) => ({ ...prev, [type]: readings }));
     setPoints((p) => p + POINTS_PER_VITAL);
     showRandomMessage();
-  }, [showRandomMessage]);
+    closeVitalModal();
+  }, [showRandomMessage, closeVitalModal]);
 
   const buyShirt = useCallback((id) => {
     const item = SHIRTS.find((s) => s.id === id);
@@ -108,14 +129,36 @@ function App() {
             equippedShirtId={equippedShirtId}
             equippedBackgroundId={equippedBackgroundId}
             equippedHatId={equippedHatId}
+            vitalReadings={vitalReadings}
             onPalClick={showRandomClickMessage}
           />
         </Paper>
 
-        <Button variant="contained" color="primary" size="large" onClick={takeVitals}>
-          Take Vitals (+{POINTS_PER_VITAL} points)
-        </Button>
+        <Typography variant="subtitle1" gutterBottom fontWeight="medium">
+          Record your vitals (+{POINTS_PER_VITAL} points each)
+        </Typography>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+          <Button variant="contained" color="primary" onClick={() => openVitalModal('bloodPressure')}>
+            Blood Pressure
+          </Button>
+          <Button variant="contained" color="primary" onClick={() => openVitalModal('bloodOxygen')}>
+            Blood Oxygen
+          </Button>
+          <Button variant="contained" color="primary" onClick={() => openVitalModal('weight')}>
+            Weight
+          </Button>
+          <Button variant="contained" color="primary" onClick={() => openVitalModal('heartRate')}>
+            Heart Rate
+          </Button>
+        </Box>
       </Paper>
+
+      <RecordVitalModal
+        open={vitalModalOpen}
+        onClose={closeVitalModal}
+        vitalType={vitalModalType}
+        onSubmit={(readings) => handleVitalRecorded(readings, vitalModalType)}
+      />
 
       <PalStore
         open={storeOpen}
