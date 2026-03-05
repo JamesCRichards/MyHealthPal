@@ -4,15 +4,24 @@ import PalBox from './components/PalBox';
 import PalStore from './components/PalStore';
 import RecordVitalModal from './components/RecordVitalModal';
 import { SHIRTS, BACKGROUNDS, HATS } from './data/cosmetics';
+import { isVitalInNormalRange } from './utils/vitalThresholds';
 
 const POINTS_PER_VITAL = 10;
 
-const HAPPY_MESSAGES = [
-  "Thanks for taking your vitals! You're taking such good care of us both!",
-  "You did it! I'm so proud of you for sticking to your care plan.",
-  "That really helps — I feel better when you check in. Thank you!",
+const CONGRATULATING_MESSAGES = [
+  "That's a great reading! You're taking such good care of us both!",
+  "Nice! Your numbers look healthy. Keep it up!",
+  "You're doing great — that's right in the healthy range!",
   "Awesome! Every reading you take keeps us both on track.",
   "You're the best! Thanks for looking after your health today.",
+];
+
+const REASSURING_MESSAGES = [
+  "Thanks for checking in. If you're ever concerned, your care team is here to help.",
+  "It's okay — tracking helps. Share this with your doctor so you can stay on top of things.",
+  "You're doing the right thing by logging it. Keep following your care plan.",
+  "Remember, one reading doesn't tell the whole story. Keep tracking and talk to your care team if needed.",
+  "We're glad you're paying attention. Your care team can help you understand what's best for you.",
 ];
 
 const CLICK_MESSAGES = [
@@ -51,8 +60,10 @@ function App() {
     setVitalModalType(null);
   }, []);
 
-  const showRandomMessage = useCallback(() => {
-    const message = HAPPY_MESSAGES[Math.floor(Math.random() * HAPPY_MESSAGES.length)];
+  const showVitalMessage = useCallback((readings, type) => {
+    const inRange = isVitalInNormalRange(type, readings);
+    const messages = inRange ? CONGRATULATING_MESSAGES : REASSURING_MESSAGES;
+    const message = messages[Math.floor(Math.random() * messages.length)];
     setPalMessage(message);
     setTimeout(() => setPalMessage(null), 5000);
   }, []);
@@ -66,9 +77,9 @@ function App() {
   const handleVitalRecorded = useCallback((readings, type) => {
     setVitalReadings((prev) => ({ ...prev, [type]: readings }));
     setPoints((p) => p + POINTS_PER_VITAL);
-    showRandomMessage();
+    showVitalMessage(readings, type);
     closeVitalModal();
-  }, [showRandomMessage, closeVitalModal]);
+  }, [showVitalMessage, closeVitalModal]);
 
   const buyShirt = useCallback((id) => {
     const item = SHIRTS.find((s) => s.id === id);
