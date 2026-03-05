@@ -4,7 +4,7 @@ Virtual health companion — **Health Pal** for patients.
 
 ## Features
 
-- **Health Pal** conversational agent (opened via "Talk to Health Pal" button), powered by the Cursor API with a built-in fallback.
+- **Health Pal** conversational agent (opened via "Talk to Health Pal" button), powered by **real AI chat** when an API key is set (see below).
 - **Medication reminders** on the home screen for an example patient (Jane Doe, 68) with diabetes, congestive heart failure, and hypertension.
 
 ## Run the app
@@ -18,7 +18,7 @@ Virtual health companion — **Health Pal** for patients.
    ```bash
    npm run server
    ```
-   Server runs at `http://localhost:3001`. Uses the Cursor API key from `.env` if set; otherwise uses the built-in fallback replies.
+   Server runs at `http://localhost:3001`.
 
 3. **Start the React app** (in another terminal):
    ```bash
@@ -26,12 +26,15 @@ Virtual health companion — **Health Pal** for patients.
    ```
    App runs at `http://localhost:3000`.
 
-4. Copy `.env.example` to `.env` and set `CURSOR_API_KEY` if you want to use the Cursor API. `REACT_APP_API_URL=http://localhost:3001` is set so the frontend calls the server.
+4. **Full AI chat** (so Pal answers any question, not just programmed replies):  
+   Add one of these to `.env` and restart the server:
+   - **Groq (free, no card):** Get a key at [console.groq.com](https://console.groq.com) → API Keys, then set `GROQ_API_KEY=gsk_...`
+   - **OpenAI:** [platform.openai.com/api-keys](https://platform.openai.com/api-keys) → `OPENAI_API_KEY=sk-...`
+   - **OpenRouter (free tier):** [openrouter.ai/keys](https://openrouter.ai/keys) → `OPENROUTER_API_KEY=...`  
+   Set `REACT_APP_API_URL=http://localhost:3001` so the frontend calls the server.
 
 ## Example patient
 
 - **Jane Doe**, 68  
 - Conditions: Type 2 Diabetes, Congestive Heart Failure, Hypertension  
 - Example medications: Metformin, Lisinopril, Furosemide, Carvedilol, Aspirin (see `src/data/patientProfile.js`).
-
-PAL!

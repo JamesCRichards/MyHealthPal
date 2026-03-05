@@ -194,8 +194,7 @@ export default function HealthPal({
               <span className="health-pal-pal-label">Pal</span>
               {messages.length === 0 && (
                 <p className="health-pal-welcome">
-                  Hi! I'm your Health Pal. Ask me about your medications, reminders, or general tips for diabetes, heart
-                  failure, or blood pressure. Reply to the reminders that appear to earn care points!
+                  Hi! I'm your Health Pal. Let's talk about your health—your conditions, care plan, how you're feeling, or your medications. I'm here to listen and support you. (You can also reply to the reminder popups to earn care points.)
                 </p>
               )}
               {messages.map((m, i) =>
@@ -234,7 +233,7 @@ export default function HealthPal({
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about medications or reminders..."
+              placeholder="Talk about your health, care plan, or how you're feeling..."
               disabled={loading}
               aria-label="Message Health Pal"
             />
