@@ -57,6 +57,43 @@
   cursor: pointer;
 }
 
+.pal-hat {
+  width: 80px;
+  height: 24px;
+  border-radius: 12px 12px 0 0;
+  margin-bottom: -4px;
+  z-index: 2;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+}
+
+.pal-hat--cap {
+  height: 20px;
+  border-radius: 50% 50% 0 0;
+  width: 76px;
+}
+
+.pal-hat--beanie {
+  height: 28px;
+  border-radius: 50%;
+  width: 78px;
+  margin-bottom: -8px;
+}
+
+.pal-hat--sunhat {
+  width: 88px;
+  height: 12px;
+  border-radius: 50%;
+  margin-bottom: 2px;
+}
+
+.pal-hat--crown {
+  height: 22px;
+  width: 72px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #F1C40F 0%, #F39C12 100%) !important;
+  border: 2px solid #D4AC0D;
+}
+
 .pal-head {
   width: 72px;
   height: 72px;

@@ -16,3 +16,11 @@ export const BACKGROUNDS = [
   { id: 'space', name: 'Space', cost: 200, color: '#1a1a2e', accent: '#9D4EDD' },
   { id: 'cozy', name: 'Cozy Room', cost: 100, color: '#D4A574', accent: '#8B4513' },
 ];
+
+export const HATS = [
+  { id: 'none', name: 'No Hat', cost: 0, color: null },
+  { id: 'cap', name: 'Baseball Cap', cost: 60, color: '#C0392B' },
+  { id: 'beanie', name: 'Beanie', cost: 70, color: '#2C3E50' },
+  { id: 'sunhat', name: 'Sun Hat', cost: 90, color: '#F4D03F' },
+  { id: 'crown', name: 'Crown', cost: 150, color: '#F1C40F' },
+];

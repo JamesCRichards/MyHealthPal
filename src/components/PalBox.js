@@ -1,6 +1,6 @@
 import React from 'react';
 import { Paper, Typography } from '@mui/material';
-import { SHIRTS, BACKGROUNDS } from '../data/cosmetics';
+import { SHIRTS, BACKGROUNDS, HATS } from '../data/cosmetics';
 import './PalBox.css';
 
 function getShirt(id) {
@@ -11,9 +11,14 @@ function getBackground(id) {
   return BACKGROUNDS.find((b) => b.id === id) || BACKGROUNDS[0];
 }
 
-function PalBox({ message, equippedShirtId = 'default', equippedBackgroundId = 'default', onPalClick }) {
+function getHat(id) {
+  return HATS.find((h) => h.id === id) || HATS[0];
+}
+
+function PalBox({ message, equippedShirtId = 'default', equippedBackgroundId = 'default', equippedHatId = 'none', onPalClick }) {
   const shirt = getShirt(equippedShirtId);
   const bg = getBackground(equippedBackgroundId);
+  const hat = getHat(equippedHatId);
 
   return (
     <Paper
@@ -38,6 +43,12 @@ function PalBox({ message, equippedShirtId = 'default', equippedBackgroundId = '
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onPalClick(); }}
         aria-label="Click to hear your pal say something"
       >
+        {hat.color && (
+          <div
+            className={`pal-hat pal-hat--${equippedHatId}`}
+            style={{ backgroundColor: hat.color }}
+          />
+        )}
         <div className="pal-head">
           <div className="pal-face">
             <div className="pal-eyes">

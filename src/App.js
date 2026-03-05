@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { AppBar, IconButton, Paper, Typography, Button } from '@mui/material';
 import PalBox from './components/PalBox';
 import PalStore from './components/PalStore';
-import { SHIRTS, BACKGROUNDS } from './data/cosmetics';
+import { SHIRTS, BACKGROUNDS, HATS } from './data/cosmetics';
 
 const POINTS_PER_VITAL = 10;
 
@@ -29,6 +29,8 @@ function App() {
   const [equippedBackgroundId, setEquippedBackgroundId] = useState('default');
   const [ownedShirtIds, setOwnedShirtIds] = useState(['default']);
   const [ownedBackgroundIds, setOwnedBackgroundIds] = useState(['default']);
+  const [ownedHatIds, setOwnedHatIds] = useState(['none']);
+  const [equippedHatId, setEquippedHatId] = useState('none');
 
   const showRandomMessage = useCallback(() => {
     const message = HAPPY_MESSAGES[Math.floor(Math.random() * HAPPY_MESSAGES.length)];
@@ -71,6 +73,18 @@ function App() {
     if (ownedBackgroundIds.includes(id)) setEquippedBackgroundId(id);
   }, [ownedBackgroundIds]);
 
+  const buyHat = useCallback((id) => {
+    const item = HATS.find((h) => h.id === id);
+    if (!item || item.cost === 0 || points < item.cost) return;
+    setPoints(points - item.cost);
+    setOwnedHatIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    setEquippedHatId(id);
+  }, [points]);
+
+  const equipHat = useCallback((id) => {
+    if (ownedHatIds.includes(id)) setEquippedHatId(id);
+  }, [ownedHatIds]);
+
   return (
     <div className="App">
       <Paper style={{ padding: '16px', minHeight: '100vh' }}>
@@ -93,6 +107,7 @@ function App() {
             message={palMessage}
             equippedShirtId={equippedShirtId}
             equippedBackgroundId={equippedBackgroundId}
+            equippedHatId={equippedHatId}
             onPalClick={showRandomClickMessage}
           />
         </Paper>
@@ -108,12 +123,16 @@ function App() {
         points={points}
         ownedShirtIds={ownedShirtIds}
         ownedBackgroundIds={ownedBackgroundIds}
+        ownedHatIds={ownedHatIds}
         equippedShirtId={equippedShirtId}
         equippedBackgroundId={equippedBackgroundId}
+        equippedHatId={equippedHatId}
         onBuyShirt={buyShirt}
         onBuyBackground={buyBackground}
+        onBuyHat={buyHat}
         onEquipShirt={equipShirt}
         onEquipBackground={equipBackground}
+        onEquipHat={equipHat}
       />
     </div>
   );
