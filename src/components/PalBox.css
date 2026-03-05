@@ -1,0 +1,150 @@
+.pal-box {
+  position: relative;
+  min-height: 280px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 24px;
+  overflow: hidden;
+}
+
+.pal-speech-bubble {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 85%;
+  padding: 12px 18px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  animation: bubbleIn 0.3s ease-out;
+}
+
+.pal-speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 10px solid transparent;
+  border-top-color: white;
+}
+
+.pal-speech-text {
+  margin: 0 !important;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+@keyframes bubbleIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.pal-character {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+.pal-head {
+  width: 72px;
+  height: 72px;
+  background: #FFE4C4;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #E8C9A8;
+  z-index: 1;
+}
+
+.pal-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.pal-eyes {
+  display: flex;
+  gap: 18px;
+  margin-top: 8px;
+}
+
+.pal-eye {
+  width: 10px;
+  height: 10px;
+  background: #333;
+  border-radius: 50%;
+}
+
+.pal-smile {
+  width: 24px;
+  height: 12px;
+  border: 3px solid #333;
+  border-top: none;
+  border-radius: 0 0 24px 24px;
+  margin-top: 4px;
+}
+
+.pal-body {
+  width: 90px;
+  height: 70px;
+  border-radius: 12px 12px 0 0;
+  margin-top: -8px;
+  position: relative;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+}
+
+.pal-shirt--solid {
+  /* default solid color from inline style */
+}
+
+.pal-shirt-stripes {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: stretch;
+  padding: 4px;
+}
+
+.pal-stripe {
+  flex: 1;
+  max-width: 8px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 2px;
+}
+
+.pal-shirt-polka {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+}
+
+.pal-dot {
+  width: 14px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+}
+
+.pal-dot:nth-child(odd) {
+  background: rgba(0, 0, 0, 0.12);
+}
