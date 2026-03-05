@@ -24,8 +24,9 @@ const CHAT_MAX_CHARS = 350;
 /**
  * Call an LLM for chat. Tries in order: OpenAI, OpenRouter, Groq, Cursor/compatible endpoint.
  * Returns the assistant reply text or null if no API is configured or the request fails.
+ * Optional maxTokens overrides default CHAT_MAX_TOKENS.
  */
-async function callChatAPI(messages) {
+async function callChatAPI(messages, maxTokens = CHAT_MAX_TOKENS) {
   const formatted = messages.map((m) => ({ role: m.role, content: m.content }));
 
   // 1) OpenAI API
@@ -39,7 +40,7 @@ async function callChatAPI(messages) {
       body: JSON.stringify({
         model: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini',
         messages: formatted,
-        max_tokens: CHAT_MAX_TOKENS,
+        max_tokens: maxTokens,
       }),
     })
       .then((res) => (res.ok ? res.json() : null))
@@ -63,7 +64,7 @@ async function callChatAPI(messages) {
       body: JSON.stringify({
         model: process.env.OPENROUTER_CHAT_MODEL || 'openai/gpt-4o-mini',
         messages: formatted,
-        max_tokens: CHAT_MAX_TOKENS,
+        max_tokens: maxTokens,
       }),
     })
       .then((res) => (res.ok ? res.json() : null))
@@ -86,7 +87,7 @@ async function callChatAPI(messages) {
       body: JSON.stringify({
         model: process.env.GROQ_CHAT_MODEL || 'llama-3.3-70b-versatile',
         messages: formatted,
-        max_completion_tokens: CHAT_MAX_TOKENS,
+        max_completion_tokens: maxTokens,
       }),
     });
     if (res.ok) {
@@ -113,7 +114,7 @@ async function callChatAPI(messages) {
       body: JSON.stringify({
         model: process.env.CURSOR_CHAT_MODEL || 'gpt-4o-mini',
         messages: formatted,
-        max_tokens: CHAT_MAX_TOKENS,
+        max_tokens: maxTokens,
       }),
     })
       .then((res) => (res.ok ? res.json() : null))
@@ -358,6 +359,67 @@ app.post('/api/classify-reminder-response', async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: e.message || 'Server error', positive: false, points: -5 });
+  }
+});
+
+/** Max tokens for doctor report (need enough for JSON array of ~10 short strings). */
+const DOCTOR_REPORT_MAX_TOKENS = 400;
+
+/**
+ * Extract topics/concerns for doctor from chat and reminder replies using LLM.
+ * Returns { topics: string[] }. Falls back to empty array if no API or parse error.
+ */
+async function extractDoctorReportTopics(chatMessages, reminderReplies) {
+  const chatBlob =
+    Array.isArray(chatMessages) && chatMessages.length > 0
+      ? chatMessages.map((m) => `${m.role}: ${(m.content || '').trim()}`).join('\n')
+      : '(no conversation yet)';
+  const reminderBlob =
+    Array.isArray(reminderReplies) && reminderReplies.length > 0
+      ? reminderReplies
+          .map(
+            (r) =>
+              `Reminder: ${(r.reminderText || '').trim()} | Reply: ${(r.userReply || '').trim()}`
+          )
+          .join('\n')
+      : '(no reminder replies yet)';
+
+  const systemPrompt = `You are a health assistant. From the patient's conversation with Health Pal and their reminder replies, extract a short list of topics and concerns they may want to discuss with their doctor at their next appointment.
+
+Conversation with Pal:
+${chatBlob}
+
+Reminder replies (reminder text and patient's reply):
+${reminderBlob}
+
+Respond with ONLY a JSON array of strings. Each string is one topic or concern, brief (under 15 words). Maximum 10 items. Example: ["Difficulty remembering to take Metformin","Feeling tired lately","Questions about blood pressure medication"]
+If there is nothing substantive to discuss, return [].`;
+
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: 'List topics for the doctor.' },
+  ];
+
+  const reply = await callChatAPI(messages, DOCTOR_REPORT_MAX_TOKENS);
+  if (!reply) return [];
+
+  try {
+    const parsed = JSON.parse(reply.replace(/[\s\S]*?(\[[\s\S]*\])[\s\S]*/, '$1'));
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((t) => typeof t === 'string' && t.trim().length > 0).slice(0, 10);
+  } catch (_) {
+    return [];
+  }
+}
+
+app.post('/api/doctor-report', async (req, res) => {
+  try {
+    const { chatMessages, reminderReplies } = req.body || {};
+    const topics = await extractDoctorReportTopics(chatMessages, reminderReplies);
+    res.json({ topics });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: e.message || 'Server error', topics: [] });
   }
 });
 

@@ -1,11 +1,53 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { getPatientContextSummary } from '../data/patientProfile';
 import { getNextInteractiveReminder } from '../data/reminders';
-import { sendMessage, getCarePoints, updateCarePoints, classifyReminderResponse } from '../services/healthPalApi';
+import { sendMessage, getCarePoints, updateCarePoints, classifyReminderResponse, getDoctorReport } from '../services/healthPalApi';
 import './HealthPal.css';
 
 const REMINDER_INTERVAL_MS = 5 * 60 * 1000; // 2 minutes - show next reminder / treat current as ignored
 const IGNORED_POINTS = -5;
+
+const CHAT_HISTORY_KEY = 'healthpal_chat_history';
+const REMINDER_REPLIES_KEY = 'healthpal_reminder_replies';
+const MAX_CHAT_ITEMS = 100;
+const MAX_REMINDER_REPLIES = 50;
+
+function loadChatHistory() {
+  try {
+    const raw = localStorage.getItem(CHAT_HISTORY_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr.slice(-MAX_CHAT_ITEMS) : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function saveChatHistory(messages) {
+  try {
+    const toSave = Array.isArray(messages) ? messages.slice(-MAX_CHAT_ITEMS) : [];
+    localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(toSave));
+  } catch (_) {}
+}
+
+function loadReminderReplies() {
+  try {
+    const raw = localStorage.getItem(REMINDER_REPLIES_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr.slice(-MAX_REMINDER_REPLIES) : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function appendReminderReply(reminderType, reminderText, userReply) {
+  const prev = loadReminderReplies();
+  const next = [...prev, { reminderType, reminderText, userReply, timestamp: Date.now() }].slice(-MAX_REMINDER_REPLIES);
+  try {
+    localStorage.setItem(REMINDER_REPLIES_KEY, JSON.stringify(next));
+  } catch (_) {}
+}
 
 export default function HealthPal({
   carePoints: carePointsProp,
@@ -19,13 +61,17 @@ export default function HealthPal({
   const [internalOpen, setInternalOpen] = useState(false);
   const open = onOpenChange != null ? controlledOpen : internalOpen;
   const setOpen = onOpenChange != null ? onOpenChange : setInternalOpen;
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => loadChatHistory());
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [carePoints, setCarePointsState] = useState(carePointsProp ?? 0);
   const [activeReminder, setActiveReminder] = useState(null);
   const [reminderReplyText, setReminderReplyText] = useState('');
   const [reminderSubmitting, setReminderSubmitting] = useState(false);
+  const [doctorReportOpen, setDoctorReportOpen] = useState(false);
+  const [doctorReportLoading, setDoctorReportLoading] = useState(false);
+  const [doctorReportTopics, setDoctorReportTopics] = useState([]);
+  const [doctorReportError, setDoctorReportError] = useState(null);
   const patientContext = getPatientContextSummary();
   const reminderTimerRef = useRef(null);
   const activeReminderRef = useRef(null);
@@ -47,6 +93,10 @@ export default function HealthPal({
       setCarePointsState(carePointsProp);
     }
   }, [carePointsProp]);
+
+  useEffect(() => {
+    saveChatHistory(messages);
+  }, [messages]);
 
   // Auto-show a new interactive reminder every 2 minutes. If one is already open, treat as ignored (negative points) then show next.
   useEffect(() => {
@@ -78,6 +128,7 @@ export default function HealthPal({
   const handleReminderReply = useCallback(
     async (text) => {
       if (!activeReminder || reminderSubmitting) return;
+      appendReminderReply(activeReminder.type, activeReminder.text, text);
       setReminderSubmitting(true);
       try {
         const { points } = await classifyReminderResponse(activeReminder.type, activeReminder.text, text);
@@ -126,6 +177,27 @@ export default function HealthPal({
       setLoading(false);
     }
   };
+
+  const handleDoctorReport = useCallback(async () => {
+    setDoctorReportError(null);
+    setDoctorReportOpen(true);
+    setDoctorReportLoading(true);
+    try {
+      const chatMessages = loadChatHistory();
+      const reminderReplies = loadReminderReplies().map(({ reminderType, reminderText, userReply }) => ({
+        reminderType,
+        reminderText,
+        userReply,
+      }));
+      const { topics } = await getDoctorReport(chatMessages, reminderReplies);
+      setDoctorReportTopics(topics);
+    } catch (err) {
+      setDoctorReportError(err.message || 'Could not load report');
+      setDoctorReportTopics([]);
+    } finally {
+      setDoctorReportLoading(false);
+    }
+  }, []);
 
   const isEmbedded = hidePoints && hideToggleButton;
 
@@ -181,6 +253,16 @@ export default function HealthPal({
             <span className="health-pal-header-points">Care: {points}</span>
             <button
               type="button"
+              className="health-pal-doctor-report-btn"
+              onClick={handleDoctorReport}
+              disabled={doctorReportLoading}
+              aria-label="Doctor report"
+              title="Topics to discuss with your doctor"
+            >
+              Doctor report
+            </button>
+            <button
+              type="button"
               className="health-pal-close"
               onClick={() => setOpen(false)}
               aria-label="Close"
@@ -188,39 +270,46 @@ export default function HealthPal({
               ×
             </button>
           </div>
+          {doctorReportOpen && (
+            <div className="health-pal-doctor-report">
+              <h4 className="health-pal-doctor-report-title">Topics to discuss with your doctor</h4>
+              {doctorReportLoading && <p className="health-pal-doctor-report-loading">Generating…</p>}
+              {doctorReportError && <p className="health-pal-doctor-report-error">{doctorReportError}</p>}
+              {!doctorReportLoading && !doctorReportError && (
+                <>
+                  {doctorReportTopics.length === 0 ? (
+                    <p className="health-pal-doctor-report-empty">No topics yet. Chat with Pal and reply to reminders to build your list.</p>
+                  ) : (
+                    <ul className="health-pal-doctor-report-list">
+                      {doctorReportTopics.map((topic, i) => (
+                        <li key={i}>{topic}</li>
+                      ))}
+                    </ul>
+                  )}
+                  <button
+                    type="button"
+                    className="health-pal-doctor-report-close"
+                    onClick={() => setDoctorReportOpen(false)}
+                  >
+                    Close
+                  </button>
+                </>
+              )}
+            </div>
+          )}
           <div className="health-pal-messages">
-            {/* Pal's area: welcome + Pal's replies (same place as his conversations) */}
-            <div className="health-pal-pal-area">
-              <span className="health-pal-pal-label">Pal</span>
-              {messages.length === 0 && (
-                <p className="health-pal-welcome">
-                  Hi! I'm your Health Pal. Let's talk about your health—your conditions, care plan, how you're feeling, or your medications. I'm here to listen and support you. (You can also reply to the reminder popups to earn care points.)
-                </p>
-              )}
-              {messages.map((m, i) =>
-                m.role === 'assistant' ? (
-                  <div key={i} className="message message-assistant">
-                    {m.content}
-                  </div>
-                ) : null
-              )}
-              {loading && <div className="message message-assistant loading">Thinking...</div>}
-            </div>
-            {/* Your typing: your messages in one place */}
-            <div className="health-pal-your-area">
-              <span className="health-pal-your-label">You</span>
-              {messages.filter((m) => m.role === 'user').length === 0 ? (
-                <p className="health-pal-your-empty">Your messages will appear here.</p>
-              ) : (
-                messages.map((m, i) =>
-                  m.role === 'user' ? (
-                    <div key={i} className="message message-user">
-                      {m.content}
-                    </div>
-                  ) : null
-                )
-              )}
-            </div>
+            {/* Single chat thread: welcome, then messages in order */}
+            {messages.length === 0 && (
+              <div className="message message-assistant health-pal-welcome-bubble">
+                Hi! I'm your Health Pal. Let's talk about your health—your conditions, care plan, how you're feeling, or your medications. I'm here to listen and support you. (You can also reply to the reminder popups to earn care points.)
+              </div>
+            )}
+            {messages.map((m, i) => (
+              <div key={i} className={`message ${m.role === 'user' ? 'message-user' : 'message-assistant'}`}>
+                {m.content}
+              </div>
+            ))}
+            {loading && <div className="message message-assistant loading">Thinking...</div>}
           </div>
           <form
             className="health-pal-form"

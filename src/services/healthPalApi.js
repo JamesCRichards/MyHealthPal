@@ -104,3 +104,25 @@ export async function classifyReminderResponse(reminderType, reminderText, userR
   }
   return fallbackClassifyReply(reminderType, reminderText, userReply);
 }
+
+/** Fetch AI-generated list of topics/concerns for the doctor from chat + reminder replies. */
+export async function getDoctorReport(chatMessages, reminderReplies) {
+  const url = `${API_BASE}/api/doctor-report`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chatMessages: Array.isArray(chatMessages) ? chatMessages : [],
+      reminderReplies: Array.isArray(reminderReplies) ? reminderReplies : [],
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(err.message || `Doctor report failed: ${res.status}`);
+  }
+
+  const data = await res.json();
+  const topics = Array.isArray(data.topics) ? data.topics : [];
+  return { topics };
+}

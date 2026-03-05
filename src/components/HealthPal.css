@@ -207,10 +207,32 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.35rem;
   padding: 0.75rem 1rem;
   background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
   color: #fff;
   border-radius: 16px 16px 0 0;
+}
+
+.health-pal-doctor-report-btn {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.health-pal-doctor-report-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.health-pal-doctor-report-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .health-pal-header h3 {
@@ -241,82 +263,35 @@
   max-height: 360px;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
-/* Pal's replies – same place as his conversations */
-.health-pal-pal-area {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-.health-pal-pal-label {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #555;
-  margin-bottom: 0.5rem;
-}
-
-.health-pal-pal-area .message-assistant {
-  margin-right: 0;
-}
-
-/* Your typing – your messages in one place */
-.health-pal-your-area {
-  border-top: 1px solid #e8f5e9;
-  padding-top: 0.75rem;
-  flex-shrink: 0;
-}
-
-.health-pal-your-label {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #2e7d32;
-  margin-bottom: 0.5rem;
-}
-
-.health-pal-your-empty {
-  color: #999;
-  font-size: 0.9rem;
-  margin: 0;
-}
-
-.health-pal-your-area .message-user {
-  margin-left: 0;
-  margin-bottom: 0.5rem;
-}
-
-.health-pal-your-area .message-user:last-child {
+/* Welcome as first assistant bubble */
+.health-pal-welcome-bubble {
   margin-bottom: 0;
 }
 
-.health-pal-welcome {
-  color: #555;
-  font-size: 0.95rem;
-  margin: 0 0 0.75rem 0;
-}
-
 .message {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0;
   padding: 0.6rem 0.85rem;
   border-radius: 12px;
   font-size: 0.95rem;
   white-space: pre-wrap;
+  max-width: 85%;
+  align-self: flex-start;
 }
 
 .message-user {
   background: #e8f5e9;
-  margin-left: 1.5rem;
+  align-self: flex-end;
   border-bottom-right-radius: 4px;
+  border-bottom-left-radius: 12px;
 }
 
 .message-assistant {
-  background: #f5f5f5;
-  margin-right: 1rem;
+  background: #f0f0f0;
   border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 12px;
 }
 
 .message-assistant.loading {
@@ -357,4 +332,55 @@
 .health-pal-form button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.health-pal-doctor-report {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #eee;
+  background: #f8f9fa;
+}
+
+.health-pal-doctor-report-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.95rem;
+  color: #1b5e20;
+}
+
+.health-pal-doctor-report-loading,
+.health-pal-doctor-report-error,
+.health-pal-doctor-report-empty {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.health-pal-doctor-report-error {
+  color: #c62828;
+}
+
+.health-pal-doctor-report-list {
+  margin: 0 0 0.5rem 0;
+  padding-left: 1.25rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #333;
+}
+
+.health-pal-doctor-report-list li {
+  margin-bottom: 0.25rem;
+}
+
+.health-pal-doctor-report-close {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2e7d32;
+  background: #fff;
+  border: 1px solid #2e7d32;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.health-pal-doctor-report-close:hover {
+  background: #e8f5e9;
 }
