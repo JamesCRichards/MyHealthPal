@@ -1,12 +1,17 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { AppBar, IconButton, Paper, Typography, Button, Box } from '@mui/material';
 import PalBox from './components/PalBox';
 import PalStore from './components/PalStore';
 import RecordVitalModal from './components/RecordVitalModal';
+import HealthPal from './components/HealthPal';
+import { getCarePoints, updateCarePoints } from './services/healthPalApi';
 import { SHIRTS, BACKGROUNDS, HATS } from './data/cosmetics';
+
+import logo from './logo.svg';
 import { isVitalInNormalRange } from './utils/vitalThresholds';
 
 const POINTS_PER_VITAL = 10;
+const VITALS_REMINDER_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 const CONGRATULATING_MESSAGES = [
   "That's a great reading! You're taking such good care of us both!",
@@ -29,10 +34,10 @@ const CLICK_MESSAGES = [
   "You're the best! Thanks for looking after your health today.",
   "Awesome! Every reading you take keeps us both on track.",
   "You're the best! Thanks for looking after your health today.",
-] 
+];
 
 function App() {
-  const [points, setPoints] = useState(0);
+  const [carePoints, setCarePoints] = useState(0);
   const [palMessage, setPalMessage] = useState(null);
   const [storeOpen, setStoreOpen] = useState(false);
   const [equippedShirtId, setEquippedShirtId] = useState('default');
@@ -59,6 +64,13 @@ function App() {
     setVitalModalOpen(false);
     setVitalModalType(null);
   }, []);
+  const [showVitalsReminder, setShowVitalsReminder] = useState(false);
+  const lastVitalsAtRef = useRef(0);
+  const vitalsReminderTimerRef = useRef(null);
+
+  useEffect(() => {
+    getCarePoints().then(setCarePoints);
+  }, []);
 
   const showVitalMessage = useCallback((readings, type) => {
     const inRange = isVitalInNormalRange(type, readings);
@@ -76,26 +88,45 @@ function App() {
 
   const handleVitalRecorded = useCallback((readings, type) => {
     setVitalReadings((prev) => ({ ...prev, [type]: readings }));
-    setPoints((p) => p + POINTS_PER_VITAL);
+    lastVitalsAtRef.current = Date.now();
+    setShowVitalsReminder(false);
+    if (vitalsReminderTimerRef.current) {
+      clearTimeout(vitalsReminderTimerRef.current);
+      vitalsReminderTimerRef.current = null;
+    }
+    vitalsReminderTimerRef.current = setTimeout(() => setShowVitalsReminder(true), VITALS_REMINDER_INTERVAL_MS);
+    updateCarePoints(POINTS_PER_VITAL).then(setCarePoints);
     showVitalMessage(readings, type);
     closeVitalModal();
   }, [showVitalMessage, closeVitalModal]);
 
+  // Show vitals reminder if no vitals taken in 5 minutes
+  useEffect(() => {
+    vitalsReminderTimerRef.current = setTimeout(() => setShowVitalsReminder(true), VITALS_REMINDER_INTERVAL_MS);
+    return () => {
+      if (vitalsReminderTimerRef.current) clearTimeout(vitalsReminderTimerRef.current);
+    };
+  }, []);
+
   const buyShirt = useCallback((id) => {
     const item = SHIRTS.find((s) => s.id === id);
-    if (!item || item.cost === 0 || points < item.cost) return;
-    setPoints(points - item.cost);
-    setOwnedShirtIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
-    setEquippedShirtId(id);
-  }, [points]);
+    if (!item || item.cost === 0 || carePoints < item.cost) return;
+    updateCarePoints(-item.cost).then((newPoints) => {
+      setCarePoints(newPoints);
+      setOwnedShirtIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+      setEquippedShirtId(id);
+    });
+  }, [carePoints]);
 
   const buyBackground = useCallback((id) => {
     const item = BACKGROUNDS.find((b) => b.id === id);
-    if (!item || item.cost === 0 || points < item.cost) return;
-    setPoints(points - item.cost);
-    setOwnedBackgroundIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
-    setEquippedBackgroundId(id);
-  }, [points]);
+    if (!item || item.cost === 0 || carePoints < item.cost) return;
+    updateCarePoints(-item.cost).then((newPoints) => {
+      setCarePoints(newPoints);
+      setOwnedBackgroundIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+      setEquippedBackgroundId(id);
+    });
+  }, [carePoints]);
 
   const equipShirt = useCallback((id) => {
     if (ownedShirtIds.includes(id)) setEquippedShirtId(id);
@@ -107,11 +138,13 @@ function App() {
 
   const buyHat = useCallback((id) => {
     const item = HATS.find((h) => h.id === id);
-    if (!item || item.cost === 0 || points < item.cost) return;
-    setPoints(points - item.cost);
-    setOwnedHatIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
-    setEquippedHatId(id);
-  }, [points]);
+    if (!item || item.cost === 0 || carePoints < item.cost) return;
+    updateCarePoints(-item.cost).then((newPoints) => {
+      setCarePoints(newPoints);
+      setOwnedHatIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+      setEquippedHatId(id);
+    });
+  }, [carePoints]);
 
   const equipHat = useCallback((id) => {
     if (ownedHatIds.includes(id)) setEquippedHatId(id);
@@ -124,14 +157,24 @@ function App() {
           <IconButton edge="start" onClick={() => setStoreOpen(true)} aria-label="Pal Store" style={{ color: 'white' }}>
             <Typography variant="button">Pal Store</Typography>
           </IconButton>
-          <Typography variant="h6">Points: {points}</Typography>
+          <Typography variant="h6">Care points: {carePoints}</Typography>
         </AppBar>
+
+        <header className="App-header" style={{ minHeight: 'auto', padding: '1rem 0' }}>
+          <img src={logo} className="App-logo" alt="logo" style={{ height: '80px' }} />
+          <p>MyHealthPal — your virtual health companion</p>
+          <HealthPal
+            carePoints={carePoints}
+            onCarePointsChange={setCarePoints}
+            onPalMessage={setPalMessage}
+          />
+        </header>
 
         <Typography variant="h4" gutterBottom style={{ marginTop: 16 }}>
           Welcome to My Health Pal
         </Typography>
         <Typography variant="body1" color="text.secondary" paragraph>
-          Your pal has the same health conditions as you and is here to help you follow your care plan. Take your vitals to earn points and make your pal happy — then spend points in the store on cosmetics for your pal!
+          Your pal has the same health conditions as you and is here to help you follow your care plan. Reply to reminders and take your vitals to earn care points — then spend them in the store on cosmetics for your pal!
         </Typography>
 
         <Paper style={{ marginBottom: 24 }} key="Pal-box">
@@ -174,7 +217,7 @@ function App() {
       <PalStore
         open={storeOpen}
         onClose={() => setStoreOpen(false)}
-        points={points}
+        points={carePoints}
         ownedShirtIds={ownedShirtIds}
         ownedBackgroundIds={ownedBackgroundIds}
         ownedHatIds={ownedHatIds}

@@ -39,7 +39,7 @@ function PalStore({
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Typography variant="h6">Pal Store</Typography>
           <Typography color="primary" fontWeight="bold">
-            {points} pts
+            {points} care pts
           </Typography>
         </Box>
       </DialogTitle>
