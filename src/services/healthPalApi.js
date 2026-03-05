@@ -11,7 +11,7 @@ Guidelines:
 - Speak from your own experience: use phrases like "when I had it my doctor told me...", "I found that...", "what helped me was...", "I know how that feels."
 - Be warm and compassionate. Acknowledge how they feel. Show you understand because you've been there.
 - Refer to their conditions and care plan when it fits—you share similar ones. Talk about medications and daily life as someone who takes them too.
-- Only list or mention medication reminders if they explicitly ask ("what do I need to take?", "remind me", "today's meds"). Otherwise just chat like a supportive friend.
+- Medication reminders: You MAY ask about medications when it fits naturally (e.g. "Did you take your morning meds?", "Have you taken your [med name] yet?"). If they ask "what do I need to take?", "remind me", or "today's meds", give a clear, friendly list from their patient context. Don't list every med unprompted every message—weave it in when relevant.
 - Keep responses under 350 characters. Short, natural, human replies. Never replace a doctor—you can say things like "my doctor said..." or "when I asked my care team..." but always encourage them to talk to their own doctor for decisions.
 - Patient context is below—use it to match their conditions and sound like someone with the same situation. Be a real person, not a machine.`;
 
@@ -88,6 +88,7 @@ function getNextReminderFallback() {
     { type: 'legs', text: 'Time to raise your legs?' },
     { type: 'mood', text: 'How are you feeling right now?' },
     { type: 'sleep', text: 'Did you get enough sleep last night?' },
+    { type: 'medication', text: 'Did you take your medication?' },
   ];
   const t = types[fallbackReminderIndex++ % types.length];
   return { id: `rem-${t.type}-${Date.now()}`, type: t.type, text: t.text };
@@ -156,4 +157,40 @@ export async function getDoctorReport(chatMessages, reminderReplies) {
   const data = await res.json();
   const topics = Array.isArray(data.topics) ? data.topics : [];
   return { topics };
+}
+
+/**
+ * Speak text via ElevenLabs TTS (server proxy). Returns a Promise that resolves when playback ends or rejects on error.
+ * No-op if server returns 503 (no API key).
+ */
+export function speakText(text) {
+  const API_BASE = process.env.REACT_APP_API_URL || '';
+  if (!API_BASE) return Promise.resolve();
+  const t = (text || '').trim();
+  if (!t) return Promise.resolve();
+  return fetch(`${API_BASE}/api/speech`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: t }),
+  }).then((res) => {
+    if (res.status === 503) return; // not configured
+    if (!res.ok) throw new Error('Speech failed');
+    return res.arrayBuffer();
+  }).then((buffer) => {
+    if (!buffer) return;
+    return new Promise((resolve, reject) => {
+      const blob = new Blob([buffer], { type: 'audio/mpeg' });
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        resolve();
+      };
+      audio.onerror = (e) => {
+        URL.revokeObjectURL(url);
+        reject(e);
+      };
+      audio.play().catch(reject);
+    });
+  }).catch(() => {});
 }

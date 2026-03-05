@@ -1,10 +1,12 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { getPatientContextSummary } from '../data/patientProfile';
-import { sendMessage, getCarePoints, updateCarePoints, classifyReminderResponse, getDoctorReport, getNextReminder } from '../services/healthPalApi';
+import { sendMessage, getCarePoints, updateCarePoints, classifyReminderResponse, getDoctorReport, getNextReminder, speakText } from '../services/healthPalApi';
 import './HealthPal.css';
 
 const REMINDER_INTERVAL_MS = 30 * 1000; // 30 seconds - show next reminder / treat current as ignored
 const IGNORED_POINTS = -5;
+
+const WELCOME_MESSAGE = "Hi! I'm your Health Pal. Let's talk about your health—your conditions, care plan, how you're feeling, or your medications. I'm here to listen and support you. (You can also reply to the reminder popups to earn care points.)";
 
 const CHAT_HISTORY_KEY = 'healthpal_chat_history';
 const REMINDER_REPLIES_KEY = 'healthpal_reminder_replies';
@@ -75,7 +77,15 @@ export default function HealthPal({
   const reminderTimerRef = useRef(null);
   const activeReminderRef = useRef(null);
   const onCarePointsChangeRef = useRef(onCarePointsChange);
+  const welcomedSpokenRef = useRef(false);
+  const inputRef = useRef('');
+  const reminderReplyTextRef = useRef('');
   onCarePointsChangeRef.current = onCarePointsChange;
+
+  useEffect(() => {
+    inputRef.current = input;
+    reminderReplyTextRef.current = reminderReplyText;
+  }, [input, reminderReplyText]);
 
   const points = typeof carePointsProp === 'number' ? carePointsProp : carePoints;
 
@@ -98,6 +108,25 @@ export default function HealthPal({
   useEffect(() => {
     saveChatHistory(messages);
   }, [messages]);
+
+  // Speak welcome message once when chat opens with no history
+  useEffect(() => {
+    if (!open || messages.length > 0 || welcomedSpokenRef.current) return;
+    welcomedSpokenRef.current = true;
+    speakText(WELCOME_MESSAGE);
+  }, [open, messages.length]);
+
+  useEffect(() => {
+    if (!open) welcomedSpokenRef.current = false;
+  }, [open]);
+
+  // When Pal sends a new message (assistant), speak it — handled in handleSend after setMessages
+
+  // Speak reminder text when a new reminder pops up (Pal says the reminder)
+  useEffect(() => {
+    if (!activeReminder?.text) return;
+    speakText(activeReminder.text);
+  }, [activeReminder?.id, activeReminder?.text]);
 
   // Auto-show a new interactive reminder every 30 seconds. If one is already open, treat as ignored (negative points) then show next.
   useEffect(() => {
@@ -167,6 +196,7 @@ export default function HealthPal({
       const { reply, messagePoints } = await sendMessage(nextMessages, patientContext);
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
       if (onPalMessage && reply) onPalMessage(reply);
+      speakText(reply);
       const pts = typeof messagePoints === 'number' ? messagePoints : 3;
       const newPoints = await updateCarePoints(pts);
       setCarePointsState(newPoints);
@@ -176,6 +206,7 @@ export default function HealthPal({
       const errorMsg = `Sorry, I couldn't reach Health Pal right now. (${err.message}) Try again or check that the server is running.`;
       setMessages((prev) => [...prev, { role: 'assistant', content: errorMsg }]);
       if (onPalMessage) onPalMessage(errorMsg);
+      speakText(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -222,15 +253,17 @@ export default function HealthPal({
           <p className="active-reminder-text">{activeReminder.text}</p>
           <p className="active-reminder-hint">Reply in your own words. No response within 30 seconds counts as missed.</p>
           <form className="active-reminder-form" onSubmit={handleReminderSubmit}>
-            <input
-              type="text"
-              value={reminderReplyText}
-              onChange={(e) => setReminderReplyText(e.target.value)}
-              placeholder="e.g. Yes I took it / No / Not yet..."
-              disabled={reminderSubmitting}
-              aria-label="Your reply"
-              autoFocus
-            />
+            <div className="active-reminder-input-row">
+              <input
+                type="text"
+                value={reminderReplyText}
+                onChange={(e) => setReminderReplyText(e.target.value)}
+                placeholder="e.g. Yes I took it / No / Not yet..."
+                disabled={reminderSubmitting}
+                aria-label="Your reply"
+                autoFocus
+              />
+            </div>
             <button type="submit" disabled={reminderSubmitting || !reminderReplyText.trim()}>
               {reminderSubmitting ? 'Checking...' : 'Send'}
             </button>
@@ -304,7 +337,7 @@ export default function HealthPal({
             {/* Single chat thread: welcome, then messages in order */}
             {messages.length === 0 && (
               <div className="message message-assistant health-pal-welcome-bubble">
-                Hi! I'm your Health Pal. Let's talk about your health—your conditions, care plan, how you're feeling, or your medications. I'm here to listen and support you. (You can also reply to the reminder popups to earn care points.)
+                {WELCOME_MESSAGE}
               </div>
             )}
             {messages.map((m, i) => (

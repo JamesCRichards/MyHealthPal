@@ -16,6 +16,8 @@ const OPENROUTER_API_KEY = (process.env.OPENROUTER_API_KEY || '').trim();
 const GROQ_API_KEY = (process.env.GROQ_API_KEY || '').trim();
 const CURSOR_API_KEY = (process.env.CURSOR_API_KEY || '').trim();
 const CURSOR_API_BASE = (process.env.CURSOR_API_BASE || 'https://api.cursor.com').trim();
+const ELEVENLABS_API_KEY = (process.env.ELEVENLABS_API_KEY || '').trim();
+const ELEVENLABS_VOICE_ID = (process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM').trim(); // Rachel
 
 /** Chat replies must stay under 350 characters. ~90 tokens is enough. */
 const CHAT_MAX_TOKENS = 90;
@@ -232,8 +234,8 @@ function fallbackReply(messages, patientContext) {
 /** Points for ignoring a reminder (no response within 2 minutes). */
 const IGNORED_REMINDER_POINTS = -5;
 
-/** Reminder types for round-robin (from patient profile schedules). */
-const REMINDER_TYPES = ['water', 'walking', 'legs', 'mood', 'sleep'];
+/** Reminder types for round-robin (from patient profile schedules). Includes medication. */
+const REMINDER_TYPES = ['water', 'walking', 'legs', 'mood', 'sleep', 'medication'];
 let nextReminderTypeIndex = 0;
 
 /**
@@ -292,11 +294,36 @@ function getNextReminderType() {
 }
 
 /** POST /api/generate-reminder: returns { id, type, text } with AI-generated personality text. */
+function pickMedicationForReminder() {
+  const hour = new Date().getHours();
+  const { medications, schedules } = PATIENT_PROFILE;
+  const morningSchedule = schedules && schedules.find((s) => s.id === 'med-morning');
+  const eveningSchedule = schedules && schedules.find((s) => s.id === 'med-evening');
+  const morningNames = (morningSchedule && morningSchedule.medicationNames) || [];
+  const eveningNames = (eveningSchedule && eveningSchedule.medicationNames) || [];
+  const isMorning = hour >= 6 && hour < 14;
+  const names = isMorning && morningNames.length ? morningNames : eveningNames.length ? eveningNames : [];
+  const name = names[Math.floor(Math.random() * names.length)] || (medications && medications[0] && medications[0].name);
+  const med = (medications || []).find((m) => m.name === name) || (medications || [])[0];
+  return med || null;
+}
+
 app.post('/api/generate-reminder', async (req, res) => {
   try {
     const type = getNextReminderType();
-    const text = await generateReminderText(type, req.body || {}).catch(() => {
-      const fallbacks = { water: 'Did you have some water?', walking: 'Were you able to walk a bit?', legs: 'Time to raise your legs?', mood: 'How are you feeling?', sleep: 'Did you get enough sleep?' };
+    const extraContext = req.body || {};
+    if (type === 'medication' && !extraContext.medication) {
+      extraContext.medication = pickMedicationForReminder();
+    }
+    const text = await generateReminderText(type, extraContext).catch(() => {
+      const fallbacks = {
+        water: 'Did you have some water?',
+        walking: 'Were you able to walk a bit?',
+        legs: 'Time to raise your legs?',
+        mood: 'How are you feeling?',
+        sleep: 'Did you get enough sleep?',
+        medication: (extraContext.medication && `Did you take ${extraContext.medication.name}?`) || 'Did you take your medication?',
+      };
       return fallbacks[type] || 'Quick check—did you do it?';
     });
     const id = `rem-${type}-${Date.now()}`;
@@ -413,6 +440,45 @@ let carePoints = 0;
 
 app.get('/api/care-points', (req, res) => {
   res.json({ points: carePoints });
+});
+
+/** POST /api/speech: ElevenLabs TTS — convert text to speech for Pal. Body: { text }. Returns mp3 audio. */
+app.post('/api/speech', async (req, res) => {
+  if (!ELEVENLABS_API_KEY) {
+    return res.status(503).json({ message: 'Speech not configured. Set ELEVENLABS_API_KEY in .env' });
+  }
+  try {
+    const { text } = req.body || {};
+    const toSpeak = (typeof text === 'string' ? text : '').trim().slice(0, 1000);
+    if (!toSpeak) {
+      return res.status(400).json({ message: 'Missing or empty text' });
+    }
+    const url = `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'xi-api-key': ELEVENLABS_API_KEY,
+        Accept: 'audio/mpeg',
+      },
+      body: JSON.stringify({
+        text: toSpeak,
+        model_id: process.env.ELEVENLABS_MODEL_ID || 'eleven_multilingual_v2',
+      }),
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      console.warn('[Health Pal] ElevenLabs TTS error:', response.status, errText.slice(0, 200));
+      return res.status(response.status).json({ message: 'TTS failed' });
+    }
+    const contentType = response.headers.get('content-type') || 'audio/mpeg';
+    res.setHeader('Content-Type', contentType);
+    const buffer = await response.arrayBuffer();
+    res.send(Buffer.from(buffer));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: e.message || 'Server error' });
+  }
 });
 
 app.patch('/api/care-points', (req, res) => {

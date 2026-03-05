@@ -101,11 +101,6 @@
   font-size: 1rem;
 }
 
-.active-reminder-form input:focus {
-  outline: none;
-  border-color: #4caf50;
-}
-
 .active-reminder-form button {
   padding: 0.6rem 1rem;
   font-weight: 600;
@@ -308,6 +303,7 @@
 
 .health-pal-form input {
   flex: 1;
+  min-width: 0;
   padding: 0.6rem 0.75rem;
   border: 1px solid #ccc;
   border-radius: 20px;
@@ -317,6 +313,17 @@
 .health-pal-form input:focus {
   outline: none;
   border-color: #4caf50;
+}
+
+.active-reminder-input-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.active-reminder-input-row input {
+  flex: 1;
+  min-width: 0;
 }
 
 .health-pal-form button {
